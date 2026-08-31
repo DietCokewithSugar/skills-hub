@@ -1,0 +1,6 @@
+{
+  "raw_data": "raw.csv",
+  "scope": "注册流程",
+  "sample": 30,
+  "csat_threshold": 4
+}

@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "columns": [
+      "id",
+      "name",
+      "score"
+    ],
+    "file": "raw.csv"
+  },
+  "metrics": {
+    "column_count": {
+      "label": "列数",
+      "source": {
+        "file": "raw.csv",
+        "file_sha256": "846efa99500c9bb003681944c3907b0ef02d93d53c1835adcc20c1589694ad4f",
+        "rows": [
+          0,
+          2
+        ],
+        "step": "summarize"
+      },
+      "value": 3
+    },
+    "row_count": {
+      "label": "行数",
+      "source": {
+        "file": "raw.csv",
+        "file_sha256": "846efa99500c9bb003681944c3907b0ef02d93d53c1835adcc20c1589694ad4f",
+        "rows": [
+          0,
+          2
+        ],
+        "step": "summarize"
+      },
+      "value": 3
+    }
+  }
+}

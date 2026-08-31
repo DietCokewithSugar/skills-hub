@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.turbo/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Runtime data
+/var/
+/data/
+.bench-workspaces/
+*.log
+
+# OS
+.DS_Store

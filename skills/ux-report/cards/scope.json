@@ -1,0 +1,19 @@
+{
+  "type": "form",
+  "title": "确认评测范围",
+  "body": "以下参数将决定报告的统计口径。数据一旦算出，报告中的数字即以此为准。",
+  "fields": [
+    { "key": "scope", "label": "评测范围", "type": "select",
+      "options": ["注册流程", "转账流程", "理财购买"], "default": "注册流程" },
+    { "key": "sample", "label": "有效样本量下限", "type": "number",
+      "default": 200, "min": 30,
+      "help": "低于此样本量的分组不单独出结论" },
+    { "key": "csat_threshold", "label": "满意判定阈值（5 分制）", "type": "number",
+      "default": 4, "min": 1, "max": 5 }
+  ],
+  "actions": [
+    { "id": "confirm", "label": "确认并继续", "primary": true },
+    { "id": "cancel", "label": "取消执行", "cancels": true }
+  ],
+  "timeout_hours": 24
+}

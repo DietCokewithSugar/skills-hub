@@ -1,0 +1,5 @@
+{
+  "expect": "reject",
+  "reason_contains": "scope",
+  "why": "R0.4 验收：缺少必填列的输入必须在计算前被拦下，并明确指出缺哪一列"
+}

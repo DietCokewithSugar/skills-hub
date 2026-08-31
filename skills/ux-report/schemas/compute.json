@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["metrics", "meta"],
+  "properties": {
+    "metrics": {
+      "type": "object",
+      "required": ["nps", "csat", "task_success", "sample_size"],
+      "properties": {
+        "nps": { "$ref": "#/$defs/metric",
+                 "properties": { "value": { "type": "number",
+                                            "minimum": -100, "maximum": 100 } } },
+        "csat": { "$ref": "#/$defs/ratio" },
+        "task_success": { "$ref": "#/$defs/ratio" },
+        "sample_size": { "$ref": "#/$defs/metric",
+                         "properties": { "value": { "type": "integer", "minimum": 1 } } },
+        "by_scope": { "type": "object", "additionalProperties": { "$ref": "#/$defs/metric" } }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["scope", "total_rows"],
+      "properties": {
+        "scope": { "type": "string", "minLength": 1 },
+        "total_rows": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "number" },
+        "source": {
+          "type": "object",
+          "required": ["file", "step"],
+          "properties": { "file": { "type": "string" }, "step": { "type": "string" } }
+        }
+      }
+    },
+    "ratio": {
+      "type": "object",
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source": {
+          "type": "object",
+          "required": ["file", "step"],
+          "properties": { "file": { "type": "string" }, "step": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
