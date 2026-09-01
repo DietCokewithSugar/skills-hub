@@ -19,11 +19,14 @@ ENV PYTHONUNBUFFERED=1 \
 # libreoffice-writer：R6 的 Word → PDF 预览。只装 libreoffice-core 是不够的，
 #   没有 Writer 过滤器就加载不了 .docx（报 source file could not be loaded）。
 # fonts-noto-cjk：报告是中文的，缺 CJK 字体转出来的 PDF 会是一片方框。
+# procps：slim 镜像默认没有 ps/pgrep。容器里跑着两个进程，
+#   出问题时能进去看一眼进程表值这 1MB。
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libreoffice-writer \
       fonts-noto-cjk \
       ca-certificates \
+      procps \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
