@@ -1,0 +1,143 @@
+/* 7.5「在等我」+ 状态转换 */
+
+.card {
+  position: relative;
+  margin: var(--s-4) 0;
+  padding: var(--s-5) var(--s-5) var(--s-4) var(--s-5);
+  background: var(--surface);
+  /* 卡片左侧 3px 朱批色竖条 */
+  border-left: 3px solid var(--signal);
+  border-top: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  max-width: var(--measure);
+  /* 卡片从 spine「生长」出来：高度 0→auto，180ms，无位移无淡入 */
+  animation: grow var(--d-grow) var(--ease-grow) both;
+  overflow: hidden;
+}
+
+@keyframes grow {
+  from { max-height: 0; padding-top: 0; padding-bottom: 0; }
+  to   { max-height: 1200px; }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* 标题旁一枚朱批圆点做 2s 呼吸 */
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  flex: none;
+}
+.dotBreathe { animation: breathe 2s ease-in-out infinite; }
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+.title { font-size: var(--t-18); font-weight: 500; }
+
+.body {
+  margin-top: var(--s-2);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+.fields { margin-top: var(--s-4); display: grid; gap: var(--s-4); }
+
+.field { display: grid; gap: var(--s-1); }
+
+.fieldLabel { font-size: var(--t-13); color: var(--ink); }
+.fieldHelp  { font-size: var(--t-12); color: var(--ink-soft); }
+
+.input, .select, .textarea {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--rule);
+  background: var(--ground);
+  font: inherit;
+  font-size: var(--t-15);
+  color: var(--ink);
+  border-radius: 0;   /* 仪器面板，不做圆角卡片堆叠那一套（7.1）*/
+  width: 100%;
+}
+.input:focus, .select:focus, .textarea:focus { border-color: var(--live); }
+.inputError { border-color: var(--signal); }
+
+.textarea { min-height: 76px; resize: vertical; }
+
+/* 字段级错误（R5 验收） */
+.error {
+  font-size: var(--t-12);
+  color: var(--signal);
+}
+
+.options { display: grid; gap: var(--s-2); }
+.option {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-size: var(--t-15);
+  cursor: pointer;
+}
+
+.actions {
+  margin-top: var(--s-5);
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.btn {
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  font-size: var(--t-13);
+  transition: background var(--d-instant) ease, border-color var(--d-instant) ease;
+}
+.btn:hover:not(:disabled) { border-color: var(--ink-soft); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.btnPrimary {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+.btnPrimary:hover:not(:disabled) { filter: brightness(1.08); }
+
+.expiry { margin-left: auto; font-size: var(--t-12); color: var(--ink-soft); }
+
+.formError {
+  margin-top: var(--s-3);
+  font-size: var(--t-13);
+  color: var(--signal);
+}
+
+/* 表格审阅 */
+.table { width: 100%; border-collapse: collapse; font-size: var(--t-13); }
+.table th, .table td {
+  border-bottom: 1px solid var(--rule);
+  padding: var(--s-2);
+  text-align: left;
+}
+.table th { color: var(--ink-soft); font-weight: 400; }
+.tableWrap { margin-top: var(--s-3); max-height: 300px; overflow: auto; }
+.rowOut { opacity: 0.4; text-decoration: line-through; }
+
+/* 已作答：就地坍缩为一行摘要（220ms），不弹 toast */
+.answered {
+  margin: var(--s-2) 0;
+  padding: var(--s-2) 0;
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+  animation: collapse var(--d-collapse) var(--ease-grow) both;
+}
+.answered::before { content: "├ "; color: var(--rule); }
+
+@keyframes collapse {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

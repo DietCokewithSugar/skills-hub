@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["summary", "findings", "recommendations"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 20, "maxLength": 600 },
+    "findings": {
+      "type": "array", "minItems": 2, "maxItems": 4,
+      "items": { "type": "string", "minLength": 5 }
+    },
+    "recommendations": {
+      "type": "array", "minItems": 2, "maxItems": 3,
+      "items": { "type": "string", "minLength": 5 }
+    }
+  }
+}

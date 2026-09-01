@@ -1,0 +1,20 @@
+.head {
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+}
+.list { padding: var(--s-2) 0; }
+.file {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  font-size: var(--t-13);
+  text-decoration: none;
+  color: var(--ink);
+}
+.file:hover { background: var(--ink-wash); }
+.size { font-size: var(--t-12); color: var(--ink-soft); flex: none; }
+.empty { padding: var(--s-4); font-size: var(--t-13); color: var(--ink-soft); }

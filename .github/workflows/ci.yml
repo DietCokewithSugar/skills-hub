@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  api:
+    name: 后端 · 测试与回归
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+
+    env:
+      # R1/R2 的验收标准用 mock 测不出来，必须打真库
+      BENCH_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/bench_test
+      BENCH_TEST_REDIS_URL: redis://localhost:6379/15
+      # 探索轨在 CI 里不可用（无硬隔离），会被结构性拒绝——这是预期
+      BENCH_SANDBOX: local
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+      - name: 安装依赖
+        working-directory: apps/api
+        run: |
+          uv venv .venv
+          uv pip install --python .venv/bin/python -e ".[dev]"
+
+      - name: Lint
+        working-directory: apps/api
+        run: .venv/bin/ruff check bench tests
+
+      - name: 测试
+        working-directory: apps/api
+        run: .venv/bin/python -m pytest -q
+
+      - name: 回归测试集（R0.5：连跑 5 次数值必须完全一致）
+        working-directory: apps/api
+        run: .venv/bin/python -m bench.accuracy.fixtures run --repeat 5
+
+  web:
+    name: 前端 · 类型与构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - working-directory: apps/web
+        run: npm ci
+      - working-directory: apps/web
+        run: npm run typecheck
+      - working-directory: apps/web
+        run: npm run build

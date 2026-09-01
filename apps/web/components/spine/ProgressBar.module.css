@@ -1,0 +1,12 @@
+/* 7.5「在做」：有进度百分比时显示细进度条（2px），无则不显示假进度 */
+.track {
+  margin-top: var(--s-2);
+  height: 2px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  background: var(--live);
+  transition: width var(--d-state) ease;
+}

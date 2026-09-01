@@ -1,0 +1,29 @@
+id: hello-world
+name: 你好，工位
+version: 0.1.0
+description: 最小闭环示例：读一个 CSV，数一数行列，产出一份摘要。用来验证平台通路。
+runtime: python-3.12
+
+inputs:
+  - key: raw_data
+    label: 任意 CSV 文件
+    type: file
+    accept: [.csv]
+    required: true
+
+steps:
+  - id: summarize
+    type: python
+    label: 统计行列
+    entry: steps/summarize.py
+    output_schema: schemas/summarize.json
+
+outputs:
+  - path: output/summary.txt
+    label: 数据摘要
+
+data_contract:
+  min_rows: 1
+
+limits:
+  timeout_s: 60

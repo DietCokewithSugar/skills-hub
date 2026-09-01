@@ -1,0 +1,28 @@
+.wrap { max-width: var(--w-spine); margin: 0 auto; padding: var(--s-8) var(--s-6) 0; }
+.title { font-size: var(--t-18); font-weight: 500; }
+.sub { margin-top: var(--s-2); font-size: var(--t-13); color: var(--ink-soft); }
+
+.form { margin-top: var(--s-5); display: grid; gap: var(--s-4); max-width: var(--measure); }
+.label { font-size: var(--t-13); }
+.hint { font-size: var(--t-12); color: var(--ink-soft); }
+
+.file {
+  padding: var(--s-4);
+  border: 1px dashed var(--rule);
+  background: var(--surface);
+  font-size: var(--t-13);
+}
+.picked { font-family: var(--font-mono); font-size: var(--t-12); color: var(--ink-soft); }
+
+.row { display: flex; gap: var(--s-2); align-items: center; }
+
+.go {
+  padding: var(--s-2) var(--s-5);
+  border: 1px solid var(--live);
+  background: var(--live);
+  color: #fff;
+  font-size: var(--t-13);
+}
+.go:disabled { opacity: 0.5; cursor: default; }
+
+.error { font-size: var(--t-13); color: var(--signal); }

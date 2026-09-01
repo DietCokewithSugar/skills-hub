@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["metrics"],
+  "properties": {
+    "metrics": {
+      "type": "object",
+      "required": ["row_count", "column_count"],
+      "properties": {
+        "row_count": {
+          "type": "object",
+          "required": ["value", "source"],
+          "properties": {"value": {"type": "integer", "minimum": 0}}
+        },
+        "column_count": {
+          "type": "object",
+          "required": ["value", "source"],
+          "properties": {"value": {"type": "integer", "minimum": 0}}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,168 @@
+.text {
+  font-size: var(--t-15);
+  line-height: var(--lh-body);
+  max-width: var(--measure);
+  white-space: pre-wrap;
+  margin: var(--s-3) 0;
+}
+
+.userText {
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--rule);
+  color: var(--ink);
+}
+
+/* ── 探索轨（R0.7 / R9）────────────────────────────────────
+   「探索轨结果在界面上有明确的视觉区隔，不与正式结果混排。」
+   用虚线边框 + 明示标签，而不是仅换个颜色 —— 颜色不足以承载
+   「这个数字不可信」这么重的语义。 */
+.exploratory {
+  border: 1px dashed var(--ink-soft);
+  background: var(--ink-wash);
+  padding: var(--s-3);
+  margin: var(--s-3) 0;
+}
+.exploratoryTag {
+  display: inline-block;
+  margin-bottom: var(--s-2);
+  padding: 1px var(--s-2);
+  border: 1px solid var(--ink-soft);
+  font-size: var(--t-12);
+  color: var(--ink-soft);
+}
+
+.trusted {
+  border-left: 2px solid var(--rule);
+  padding-left: var(--s-3);
+  margin: var(--s-3) 0;
+}
+
+.toolHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+}
+.toolName { font-family: var(--font-mono); }
+
+.code {
+  margin-top: var(--s-2);
+  padding: var(--s-3);
+  background: var(--ground);
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.toggle {
+  padding: 0; border: none; background: none;
+  font-size: var(--t-12); color: var(--ink-soft);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+
+.stdout {
+  margin-top: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  white-space: pre-wrap;
+  color: var(--ink-soft);
+  max-height: 240px;
+  overflow: auto;
+}
+
+/* ── 产物（R6）──────────────────────────────────────────── */
+.artifact {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin: var(--s-3) 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  max-width: var(--measure);
+  /* 产物生成时高亮一次 --done 边框，600ms 后恢复（7.5 状态转换）*/
+  animation: artifactIn 600ms ease-out both;
+}
+@keyframes artifactIn {
+  0%   { border-color: var(--done); background: var(--done-wash); }
+  70%  { border-color: var(--done); background: var(--done-wash); }
+  100% { border-color: var(--rule); background: var(--surface); }
+}
+
+.artifactMain { flex: 1; min-width: 0; }
+.artifactName { font-size: var(--t-15); }
+.artifactMeta { font-size: var(--t-12); color: var(--ink-soft); }
+.artifactActions { display: flex; gap: var(--s-2); flex: none; }
+
+.download {
+  padding: var(--s-1) var(--s-3);
+  border: 1px solid var(--rule);
+  background: var(--ground);
+  font-size: var(--t-13);
+  text-decoration: none;
+  color: var(--ink);
+}
+.download:hover { border-color: var(--ink-soft); }
+
+/* ── 错误（7.7）─────────────────────────────────────────── */
+.error {
+  margin: var(--s-4) 0;
+  padding: var(--s-4);
+  background: var(--surface);
+  border-left: 3px solid var(--signal);
+  border-top: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  max-width: var(--measure);
+}
+.errorWhere { font-size: var(--t-12); color: var(--ink-soft); }
+.errorWhy {
+  margin-top: var(--s-1);
+  font-size: var(--t-15);
+  color: var(--ink);
+}
+.errorNext { margin-top: var(--s-3); display: flex; gap: var(--s-2); align-items: center; }
+.errorDetail {
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  background: var(--ground);
+  font-family: var(--font-mono);
+  font-size: var(--t-12);
+  white-space: pre-wrap;
+  max-height: 240px;
+  overflow: auto;
+}
+.retry {
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--signal);
+  background: var(--signal);
+  color: #fff;
+  font-size: var(--t-13);
+}
+
+/* 叙述段落（llm step 的结构化输出，排成给人读的形态） */
+.narrative { margin: var(--s-4) 0; max-width: var(--measure); }
+.narrHead {
+  margin-top: var(--s-4);
+  font-size: var(--t-13);
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.narrList {
+  margin: var(--s-2) 0 0;
+  padding-left: var(--s-5);
+  font-size: var(--t-15);
+  line-height: var(--lh-body);
+}
+.narrList li { margin-bottom: var(--s-1); }
+
+/* 7.7 第三段：下一步怎么办 */
+.errorHint {
+  margin-top: var(--s-2);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+}
