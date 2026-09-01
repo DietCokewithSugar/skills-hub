@@ -72,3 +72,119 @@ jobs:
         run: npm run typecheck
       - working-directory: apps/web
         run: npm run build
+
+  image:
+    name: 后端镜像 · 构建与容器内验证
+    runs-on: ubuntu-latest
+
+    # 容器里同时跑 API 与 worker，worker 起来就要连 Redis、cron 还要连库。
+    # 不给依赖的话 worker 秒退，entrypoint 会按设计把整个容器带下去——
+    # 那是 entrypoint 正确，不是镜像有问题。所以冒烟测试要给足依赖，
+    # 跑在接近生产的配置下。
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建后端镜像（生产口径）
+        run: docker build -f apps/api/Dockerfile -t bench-api:ci .
+
+      # 同一个 Dockerfile，只多装测试依赖 —— 保证下面验的就是生产镜像的行为
+      - name: 构建带测试依赖的同款镜像
+        run: |
+          docker build -f apps/api/Dockerfile \
+            --build-arg INSTALL_DEV=true -t bench-api:citest .
+
+      # 只装 libreoffice-core 是不够的（没有 Writer 过滤器就加载不了 .docx）。
+      # 这一步确认镜像里装对了，否则 PDF 预览会长期静默降级。
+      - name: 确认 LibreOffice Writer 与 CJK 字体在镜像里
+        run: |
+          docker run --rm bench-api:ci python -c "
+          from bench.reports.pdf import soffice_path, writer_available
+          print('soffice:', soffice_path())
+          print('writer :', writer_available())
+          assert soffice_path(), '镜像里没有 soffice'
+          assert writer_available(), '镜像里没有 Writer 过滤器（libswlo）'
+          "
+          # 诊断用；真正的 CJK 断言在 test_pdf_contains_chinese_not_boxes
+          docker run --rm bench-api:ci sh -c 'fc-list :lang=zh | head -3' || true
+
+      # R6 的成功路径：开发机上装不了 Writer，只有在这个镜像里才测得到。
+      - name: 容器内跑 PDF 转换测试
+        run: |
+          docker run --rm -w /app/apps/api bench-api:citest \
+            python -m pytest tests/integration/test_pdf_conversion.py -q
+
+      - name: 建库并跑迁移
+        run: |
+          export PGPASSWORD=postgres
+          psql -h 127.0.0.1 -U postgres -d postgres -Atc "create database bench"
+          for f in infra/supabase/migrations/*.sql; do
+            psql -h 127.0.0.1 -U postgres -d bench -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+
+      # entrypoint 同时起 API 与 worker；确认两个进程都活着、健康检查通过。
+      # --network host 让容器直接看到 runner 上的 postgres / redis。
+      - name: 冒烟：容器起得来、两个进程都活着
+        run: |
+          docker run -d --name bench-smoke --network host \
+            -e BENCH_SANDBOX=local \
+            -e BENCH_WORKSPACE_ROOT=/tmp/ws \
+            -e BENCH_DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/bench \
+            -e BENCH_REDIS_URL=redis://127.0.0.1:6379/0 \
+            bench-api:ci
+
+          ok=""
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              ok="yes"; echo "健康检查通过（${i}s）"; break
+            fi
+            sleep 1
+          done
+          if [ -z "$ok" ]; then
+            echo "::error::容器起来了但 /health 一直不通"
+            docker logs bench-smoke
+            docker rm -f bench-smoke >/dev/null
+            exit 1
+          fi
+
+          curl -sS http://127.0.0.1:8000/health; echo
+
+          skills=$(curl -sS http://127.0.0.1:8000/api/skills)
+          echo "$skills" | head -c 300; echo
+          case "$skills" in
+            *ux-report*) echo "skill 注册表加载正常" ;;
+            *)
+              echo "::error::/api/skills 里没有 ux-report——"
+              echo "skill 目录可能没进镜像，或 manifest 加载失败"
+              curl -sS http://127.0.0.1:8000/api/skills/errors
+              docker logs bench-smoke
+              docker rm -f bench-smoke >/dev/null
+              exit 1 ;;
+          esac
+
+          # worker 必须还活着。entrypoint 的 wait -n 会在任一进程退出时
+          # 带走整个容器，所以「容器还在跑」本身就是两个进程都健在的证据；
+          # 再确认一次进程表，避免将来 entrypoint 改坏了没人发现。
+          docker exec bench-smoke pgrep -f "arq bench.worker" >/dev/null || {
+            echo "::error::worker 进程不在了"
+            docker logs bench-smoke; docker rm -f bench-smoke >/dev/null; exit 1; }
+          echo "API 与 worker 均在运行"
+
+          docker logs bench-smoke 2>&1 | tail -20
+          docker rm -f bench-smoke >/dev/null

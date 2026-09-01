@@ -70,6 +70,71 @@ cd apps/api && E2B_API_KEY=... pytest tests/security/test_no_egress.py -v
 
 ---
 
+## 二点五、部署到 Render
+
+仓库根的 `render.yaml` 是一份 Blueprint：控制台 New → Blueprint 选这个仓库，
+它会建一个 web service（后端）和一个 Key Value（Redis）。
+
+### 为什么 API 和 worker 在同一个容器里
+
+用户上传的文件由 API 进程写进工作区（`routes.py::upload_input`），
+再由 worker 进程读出来交给沙箱（`loop.py::build_context`）。两者必须看到
+**同一个文件系统**。拆成两个 Render service 会让 worker 读不到刚上传的文件，
+执行直接失败 —— 而且失败得很晚（卡片都答完了才报「输入文件不存在」）。
+
+所以 `docker-entrypoint.sh` 在一个容器里起两个进程，任一退出就整体退出，
+让平台重启。这也意味着：
+
+- **必须挂持久盘**（blueprint 里 `/data`，free 计划挂不了盘）；
+- **不能扩容到多实例**（`numInstances: 1`）—— 盘只能挂一个实例，
+  多实例会各写各的工作区。
+
+### 控制台要手填的环境变量
+
+blueprint 里标了 `sync: false` 的：
+
+| 变量 | 从哪拿 |
+|---|---|
+| `BENCH_DATABASE_URL` | Supabase → Connect，见下面的坑 |
+| `BENCH_SUPABASE_URL` / `BENCH_SUPABASE_SERVICE_KEY` | Supabase → Project Settings → API |
+| `BENCH_LLM_API_KEY` | DeepSeek 控制台 |
+| `E2B_API_KEY` | E2B 控制台 → API Keys |
+| `BENCH_CORS_ORIGINS` | 部署 Vercel 之后回填前端域名 |
+
+**数据库连接串有两个坑**：
+
+1. 前缀必须改成 `postgresql+asyncpg://`（Supabase 给的是 `postgresql://`）。
+2. 要用**连接池**那个串（Session 或 Transaction pooler），不要用
+   `db.xxx.supabase.co` 直连 —— 直连多为 IPv6-only，Render 的出网连不上。
+   代码里已经为 pooler 设了 `statement_cache_size=0`，不必额外处理。
+
+### Key Value 服务的类型名
+
+Render 把 Redis 产品改名为 Key Value，blueprint 里写的是 `type: keyvalue`。
+**这一处我没能验证**（Render 的 blueprint schema 在开发环境里拉不到）。
+如果导入时报 unknown type：
+
+- 改成 `type: redis`（旧名），或者
+- 从 blueprint 里删掉这个 service，在控制台单独建一个 Key Value，
+  再把 `BENCH_REDIS_URL` 改成 `sync: false` 手填连接串。
+
+Redis 放 Render 而不是外部 serverless Redis，是因为 SSE 依赖 Redis pub/sub，
+而 serverless Redis 对 pub/sub 的支持有条件；同平台还能走私有网络
+（`ipAllowList: []` 表示不开放公网）。
+
+注意 Key Value 的免费档没有持久化，重启会清空。对 ARQ 来说影响是
+「重启瞬间排队中的任务会丢」，正在跑的 Run 状态在 Postgres 里，不受影响。
+
+### 镜像里为什么装了 LibreOffice 和中文字体
+
+`libreoffice-writer` 是 R6 的 Word → PDF 预览必需的；只装 `libreoffice-core`
+没有 Writer 过滤器，加载不了 `.docx`。`fonts-noto-cjk` 也是必需的 ——
+缺 CJK 字体时 LibreOffice **照样能转出 PDF**，只是每个汉字都是方框，
+这种失败不报错，只有打开报告才看得见。
+
+CI 的「后端镜像 · 构建与容器内验证」这个 job 会在镜像里真的转一次 PDF
+并检查嵌入字体含 CJK，所以这条路是被持续验证的，不是「应该能行」。
+
 ## 三、已知限制
 
 ### PDF 预览需要 libreoffice-writer
@@ -86,8 +151,10 @@ apt-get install -y libreoffice-writer
 日志里会打印一条明确的告警。这符合 R6「转换失败时降级为仅提供 Word 下载，
 不阻塞整个执行」。
 
-> 本项目的开发环境缺这个包且 apt 源不可用，因此 **PDF 成功路径未经实测**；
-> 降级路径已验证。部署后请手动确认一次。
+> 后端镜像（`apps/api/Dockerfile`）里已经装了 `libreoffice-writer` 与
+> `fonts-noto-cjk`，CI 的镜像 job 会在容器内真的转一次 PDF 并检查嵌入字体
+> 含 CJK。所以走 Docker 部署时这条路是被验证过的。
+> 只有在**不用镜像、直接裸装依赖**的环境里才需要自己确认这个包。
 
 ### 认证未做
 

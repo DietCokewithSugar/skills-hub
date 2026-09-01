@@ -1,0 +1,23 @@
+# 注意：Docker 的匹配语义里 `*` 不跨 `/`，所以 `*.md` 只匹配根级文件。
+# 但这条容易记错，而 skill 的 refs/*.md 与 prompts/*.md 是**必须进镜像**的
+# （少了它们 manifest 会因 reference 缺失而加载失败，skill 列表直接变空）。
+# 所以凡是只想排除根级的，一律写成 `/xxx`，不留解释空间。
+
+**/.git
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+
+# 只排根级的这几个目录/文件
+/apps/web
+/docs
+/infra
+/artifacts
+/.bench-workspaces
+/.bench-storage
+/README.md
+/render.yaml

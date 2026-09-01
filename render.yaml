@@ -1,0 +1,86 @@
+# Render Blueprint。
+#
+# 在 Render 控制台 New → Blueprint，选这个仓库即可。标了 sync:false 的
+# 环境变量需要在控制台手填（都是密钥或部署后才知道的值）。
+#
+# 关于 Key Value 服务的类型名：Render 把 Redis 产品改名为 Key Value，
+# blueprint 里对应 `type: keyvalue`。如果你的账号上报「unknown type」，
+# 把它改回 `type: redis`，或者干脆在控制台单独建一个，然后把
+# BENCH_REDIS_URL 改成手填（见 docs/runbook.md）。
+
+services:
+  # ── 后端：API + worker 同容器 ──────────────────────────────
+  # 不能拆成两个 service：用户上传的文件由 API 写工作区、由 worker 读，
+  # 两者必须共享同一个文件系统（见 apps/api/Dockerfile 的注释）。
+  - type: web
+    name: bench-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    # 构建上下文必须是仓库根：镜像里 /app 对应仓库根，
+    # config.py 靠相对路径推 skills_dir / workspace_root
+    dockerContext: .
+    # 持久盘需要付费计划；free 计划挂不了盘，工作区会在每次重启后丢失
+    plan: starter
+    healthCheckPath: /health
+    # 有持久盘的服务只能单实例 —— 这正是共享工作区所要求的，不要扩容
+    numInstances: 1
+    disk:
+      name: bench-workspace
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      # ── 会话工作区（挂在持久盘上，重启不丢）──
+      - key: BENCH_WORKSPACE_ROOT
+        value: /data/workspaces
+      - key: BENCH_SKILLS_DIR
+        value: /app/skills
+
+      # ── 沙箱 ──
+      - key: BENCH_SANDBOX
+        value: e2b
+      - key: BENCH_E2B_TEMPLATE
+        value: bench-python-312
+      - key: E2B_API_KEY
+        sync: false
+
+      # ── 模型 ──
+      - key: BENCH_LLM_BASE_URL
+        value: https://api.deepseek.com
+      - key: BENCH_LLM_MODEL
+        value: deepseek-v4-flash
+      - key: BENCH_LLM_API_KEY
+        sync: false
+
+      # ── 数据层 ──
+      # Supabase 连接串要用 **连接池**（Session/Transaction pooler）那个，
+      # 不是 db.xxx.supabase.co 直连——直连多为 IPv6，Render 出网连不上。
+      # 前缀必须改成 postgresql+asyncpg://
+      - key: BENCH_DATABASE_URL
+        sync: false
+      - key: BENCH_SUPABASE_URL
+        sync: false
+      - key: BENCH_SUPABASE_SERVICE_KEY
+        sync: false
+      - key: BENCH_STORAGE_BUCKET
+        value: bench-artifacts
+
+      # ── 队列 ──
+      - key: BENCH_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: bench-redis
+          property: connectionString
+
+      # ── 前端域名，部署 Vercel 后回填 ──
+      - key: BENCH_CORS_ORIGINS
+        sync: false
+
+  # ── 队列 ────────────────────────────────────────────────────
+  # 放在 Render 上而不是外部 serverless Redis：SSE 依赖 Redis pub/sub，
+  # 而 serverless Redis 对 pub/sub 的支持是有条件的；同平台还能走私有网络，
+  # 不必把队列暴露到公网。
+  - type: keyvalue
+    name: bench-redis
+    plan: starter
+    # 空列表 = 只允许 Render 内网访问，不开放公网
+    ipAllowList: []
