@@ -4,8 +4,15 @@
 # 安装依赖 —— 这既是安全要求，也是保证结果可复现的要求（依赖版本漂移会让
 # 同样的输入算出不同的数）。」
 #
-# 构建：
-#   e2b template build -c sandbox/e2b.Dockerfile -n bench-python-312
+# 构建：走 CI（.github/workflows/e2b-template.yml，手动触发即可），
+# 不需要任何人在本地装 CLI。要本地构建的话：
+#
+#   e2b template create bench-python-312 -p sandbox
+#
+# `-p sandbox` 不能省 —— 下面的 COPY 是相对构建上下文的，而 runtime/ 在
+# sandbox/ 下；在仓库根目录构建会找不到它。
+# 注意旧文档里的 `e2b template build -c <dockerfile>` 已废弃，且新 CLI 的
+# -c 变成了「沙箱启动命令」，照抄会传错参数。
 #
 # 出网不在这里配置：runner 建沙箱时传 allow_internet_access=False，
 # 白名单由 skill.yaml 的 limits.network_allowlist 决定。
