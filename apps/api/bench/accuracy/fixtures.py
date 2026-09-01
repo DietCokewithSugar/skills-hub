@@ -261,7 +261,7 @@ async def run_skill_fixtures(skill: LoadedSkill, *, repeat: int = 1,
             problems += diff_numeric(runs[0], expected)
         else:
             problems.append(
-                f"缺少 expected/result.json（首次可用 --update 生成）")
+                "缺少 expected/result.json（首次可用 --update 生成）")
 
         # ③ 每个数值都能追溯
         coverage = check_provenance(runs[0], require_full_coverage=False,

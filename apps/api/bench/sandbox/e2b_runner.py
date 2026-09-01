@@ -157,7 +157,7 @@ class E2BSandboxRunner:
                         exit_code = 125
                     else:
                         exit_code = getattr(result, "exit_code", 0) or 0
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 timed_out = True
                 exit_code = 124
                 exec_task.cancel()
@@ -197,11 +197,11 @@ class E2BSandboxRunner:
         deadline = time.monotonic() + limits.timeout_s + 15
         while True:
             if time.monotonic() > deadline:
-                raise asyncio.TimeoutError
+                raise TimeoutError
             try:
                 return await asyncio.wait_for(
                     asyncio.shield(task), timeout=CANCEL_POLL_SECONDS)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if await should_cancel():
                     task.cancel()
                     with contextlib.suppress(Exception, asyncio.CancelledError):

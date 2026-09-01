@@ -174,12 +174,12 @@ class LocalSubprocessRunner:
                         try:
                             await asyncio.wait_for(proc.wait(), timeout=1.0)
                             break
-                        except asyncio.TimeoutError:
+                        except TimeoutError:
                             if await should_cancel():
                                 cancelled = True
                                 await self.kill(req.run_id)
                                 break
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timed_out = True
             await self.kill(req.run_id)
         finally:

@@ -15,8 +15,7 @@ import logging
 from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
-from openai import AsyncOpenAI
-from openai import OpenAIError
+from openai import AsyncOpenAI, OpenAIError
 
 from bench.config import get_settings
 from bench.llm.client import Chunk, LLMError, Message, ToolCall, ToolSpec, Usage

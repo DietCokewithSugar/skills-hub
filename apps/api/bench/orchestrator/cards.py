@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
@@ -179,8 +179,7 @@ class TableReviewCard(_Base):
 
 
 CardSpec = Annotated[
-    Union[ConfirmCard, SelectCard, MultiSelectCard, FormCard,
-          FilePickCard, TableReviewCard],
+    ConfirmCard | SelectCard | MultiSelectCard | FormCard | FilePickCard | TableReviewCard,
     Field(discriminator="type"),
 ]
 
@@ -208,7 +207,7 @@ def parse_card_spec(raw: dict[str, Any]) -> CardSpec:
             f"{'.'.join(str(x) for x in e['loc'][1:]) or '(根)'} — {e['msg']}"
             for e in exc.errors()
         ]
-        raise CardSpecError(f"卡片定义不合法：\n" + "\n".join(f"  · {p}" for p in problems)) from exc
+        raise CardSpecError("卡片定义不合法：\n" + "\n".join(f"  · {p}" for p in problems)) from exc
 
 
 def load_card_spec(path: Path) -> CardSpec:
@@ -355,7 +354,7 @@ def summarize(spec: CardSpec, answered: dict[str, Any]) -> str:
     if not values:
         return "已确认"
     bits: list[str] = []
-    for k, v in values.items():
+    for v in values.values():
         if isinstance(v, list):
             bits.append(f"{len(v)} 项" if len(v) > 3 else "、".join(str(x) for x in v))
         elif isinstance(v, bool):

@@ -156,8 +156,9 @@ def test_multi_select_bounds():
     spec = parse_card_spec({"type": "multi_select", "title": "x",
                             "options": ["A", "B", "C"],
                             "min_selected": 2, "max_selected": 2})
-    assert validate_answer(spec, {"action": "confirm",
-                                  "values": {"choices": ["A", "B"]}})["values"]["choices"] == ["A", "B"]
+    got = validate_answer(spec, {"action": "confirm",
+                                 "values": {"choices": ["A", "B"]}})
+    assert got["values"]["choices"] == ["A", "B"]
     with pytest.raises(CardAnswerError) as e:
         validate_answer(spec, {"action": "confirm", "values": {"choices": ["A"]}})
     assert "至少选择 2 项" in e.value.field_errors["choices"]

@@ -35,7 +35,8 @@ class Message:
         if self.tool_calls:
             m["tool_calls"] = [
                 {"id": tc.id, "type": "function",
-                 "function": {"name": tc.name, "arguments": json.dumps(tc.args, ensure_ascii=False)}}
+                 "function": {"name": tc.name,
+                              "arguments": json.dumps(tc.args, ensure_ascii=False)}}
                 for tc in self.tool_calls
             ]
         if self.tool_call_id:

@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 async def execute_run(_ctx, run_id: str, user_id: str, *,
                       start_index: int = 0) -> str:
     """跑一次 Run。"""
-    from bench.orchestrator.loop import build_context, execute_run as drive
+    from bench.orchestrator.loop import build_context
+    from bench.orchestrator.loop import execute_run as drive
 
     async with db_session() as db:
         ctx = await build_context(db, run_id=uuid.UUID(run_id),
@@ -85,7 +86,7 @@ async def cleanup_deleted_sessions(_ctx) -> int:
     from bench.storage.base import get_store
 
     s = get_settings()
-    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(
+    cutoff = dt.datetime.now(dt.UTC) - dt.timedelta(
         days=s.artifact_retention_days)
     store = get_store()
     n = 0

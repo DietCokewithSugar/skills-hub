@@ -13,7 +13,7 @@ TERMINAL_STATUSES = frozenset({"succeeded", "failed", "cancelled", "expired"})
 
 
 def _now() -> dt.datetime:
-    return dt.datetime.now(dt.timezone.utc)
+    return dt.datetime.now(dt.UTC)
 
 
 class RunRepo(BaseRepo):

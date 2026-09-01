@@ -17,7 +17,6 @@ from typing import Any
 from bench.accuracy.number_guard import check_narrative
 from bench.accuracy.provenance import allowed_numbers
 from bench.accuracy.validation import load_schema, validate_llm_json
-from bench.config import get_settings
 from bench.events.types import EventType
 from bench.llm.client import Message
 from bench.llm.deepseek import DeepSeekClient
@@ -49,7 +48,6 @@ async def generate_narrative(ctx: RunContext, step: Step, idx: int) -> dict[str,
         "label": step.label or step.id,
     })
 
-    s = get_settings()
     client = DeepSeekClient()
     result_json = _merged_results(ctx)
     allowed = allowed_numbers(result_json)
@@ -83,8 +81,9 @@ async def generate_narrative(ctx: RunContext, step: Step, idx: int) -> dict[str,
             except json.JSONDecodeError as exc:
                 last_problem = f"输出不是合法 JSON：{exc}"
                 messages.append(Message(role="assistant", content=text))
-                messages.append(Message(role="user",
-                                        content=f"上一次输出不是合法 JSON（{exc}），请重新输出纯 JSON。"))
+                messages.append(Message(
+                    role="user",
+                    content=f"上一次输出不是合法 JSON（{exc}），请重新输出纯 JSON。"))
                 continue
             problems = validate_llm_json(payload, schema)
             if problems:

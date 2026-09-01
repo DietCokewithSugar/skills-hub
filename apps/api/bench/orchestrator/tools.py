@@ -18,7 +18,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import textwrap
 from typing import Any
@@ -56,8 +55,10 @@ def tool_specs(*, allow_python: bool) -> list[ToolSpec]:
             ),
             parameters={
                 "type": "object",
-                "properties": {"path": {"type": "string",
-                                        "description": "reference 的 path，如 refs/methodology.md"}},
+                "properties": {
+                    "path": {"type": "string",
+                             "description": "reference 的 path，如 refs/methodology.md"},
+                },
                 "required": ["path"],
             },
         ),

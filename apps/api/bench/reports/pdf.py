@@ -66,7 +66,7 @@ async def convert_to_pdf(docx: Path) -> Path | None:
         try:
             _, stderr = await asyncio.wait_for(proc.communicate(),
                                                timeout=CONVERT_TIMEOUT_S)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             logger.warning("PDF 转换超时，降级为仅 Word 下载")
             return None

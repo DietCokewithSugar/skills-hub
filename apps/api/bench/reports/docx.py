@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from bench.accuracy.number_guard import check_narrative
-from bench.accuracy.provenance import allowed_numbers, iter_metrics
+from bench.accuracy.provenance import allowed_numbers
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import logging
 import mimetypes
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -29,8 +28,8 @@ from bench.orchestrator.cards import (
 )
 from bench.orchestrator.context import (
     SCRATCH,
-    RunContext,
     RunCancelled,
+    RunContext,
     StepFailed,
     WaitingForInput,
 )

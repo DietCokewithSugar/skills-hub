@@ -98,7 +98,7 @@ async def event_stream(
         while True:
             try:
                 ev = await asyncio.wait_for(live.get(), timeout=heartbeat_seconds)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 yield Event(type=EventType.HEARTBEAT, data={}).to_sse()
                 continue
             if ev.seq is not None and ev.seq <= replayed_max:

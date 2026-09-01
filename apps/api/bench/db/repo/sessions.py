@@ -86,7 +86,7 @@ class SessionRepo(BaseRepo):
         await self.db.execute(
             update(SessionModel)
             .where(SessionModel.id == uuid.UUID(str(session_id)))
-            .values(deleted_at=dt.datetime.now(dt.timezone.utc))
+            .values(deleted_at=dt.datetime.now(dt.UTC))
         )
 
     async def touch(self, session_id: uuid.UUID | str) -> None:
@@ -94,5 +94,5 @@ class SessionRepo(BaseRepo):
             update(SessionModel)
             .where(SessionModel.id == uuid.UUID(str(session_id)),
                    SessionModel.user_id == self.user_id)
-            .values(updated_at=dt.datetime.now(dt.timezone.utc))
+            .values(updated_at=dt.datetime.now(dt.UTC))
         )

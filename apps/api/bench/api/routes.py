@@ -23,7 +23,7 @@ import logging
 import mimetypes
 import uuid
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
@@ -573,8 +573,8 @@ async def local_storage_fetch(key: str, expires: int, token: str,
     只有在未配置 Supabase 时才会被 signed_url() 指向这里。签名与过期
     的校验和 Supabase 侧一致 —— 拿到过期链接同样是 403。
     """
-    from bench.storage.local import LocalObjectStore, verify
     from bench.storage.base import get_store
+    from bench.storage.local import LocalObjectStore, verify
 
     store = get_store()
     if not isinstance(store, LocalObjectStore):

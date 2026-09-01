@@ -241,7 +241,8 @@ def load_manifest(skill_dir: Path) -> Manifest:
     except yaml.YAMLError as exc:
         mark = getattr(exc, "problem_mark", None)
         line = f"第 {mark.line + 1} 行: " if mark else ""
-        raise ManifestError(path, [f"{line}YAML 语法错误 — {getattr(exc, 'problem', exc)}"]) from exc
+        problem = getattr(exc, "problem", exc)
+        raise ManifestError(path, [f"{line}YAML 语法错误 — {problem}"]) from exc
 
     if not isinstance(raw, dict):
         raise ManifestError(path, ["第 1 行: skill.yaml 顶层必须是一个映射（key: value）"])
