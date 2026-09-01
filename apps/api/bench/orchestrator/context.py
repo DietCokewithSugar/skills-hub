@@ -39,6 +39,17 @@ class RunCancelled(Exception):
     """用户取消（R8）。"""
 
 
+#: 不可重试的失败各自的「下一步怎么办」。7.7 要求三段都说清：
+#: 哪一步、什么原因、下一步怎么办 —— 只说前两段等于把人晾在那里。
+_NEXT_STEP_HINT = {
+    "preflight": "换一份包含所有必填列的数据，或在确认卡片里调整口径后重新开始。",
+    "schema": "这一步的输出不符合它自己声明的 schema，属于 skill 的问题，"
+              "请联系 skill 作者。",
+    "provenance": "指标缺少来源标注，属于 skill 的问题，请联系 skill 作者。",
+    "untrusted_code_refused": "当前沙箱不提供内核级隔离，无法执行模型生成的代码。",
+}
+
+
 class StepFailed(Exception):
     """某一步失败。payload 直接对应 7.7 的三段式错误展示。"""
 
@@ -49,6 +60,10 @@ class StepFailed(Exception):
         self.message = message
         self.detail = detail or {}
         self.retryable = retryable
+        if not retryable and "hint" not in self.detail:
+            hint = _NEXT_STEP_HINT.get(str(self.detail.get("kind", "")))
+            if hint:
+                self.detail["hint"] = hint
         super().__init__(f"步骤 {step_id!r} 失败：{message}")
 
     def to_payload(self) -> dict[str, Any]:

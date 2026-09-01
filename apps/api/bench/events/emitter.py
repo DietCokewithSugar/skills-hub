@@ -26,6 +26,10 @@ class Emitter:
         self.parts = PartRepo(db, user_id)
         self.bus = bus or get_bus()
         self._message_id: uuid.UUID | None = None
+        #: 当前正在执行的 step。落 Part 时盖进 payload —— 这样刷新页面重放时
+        #: 仍然知道每段内容属于哪一道工序（7.4 的 spine 是按工序组织的）。
+        #: step 事件本身是瞬时的、不落库，光靠它们回放不出时间轴。
+        self.current_step: str | None = None
 
     async def open_message(self, role: str = "assistant") -> uuid.UUID:
         msg = await self.parts.create_message(self.session_id, role)
@@ -45,6 +49,8 @@ class Emitter:
         commit 在 publish 之前：订阅端收到 seq 时，库里一定已经能读到它。
         """
         message_id = await self._ensure_message()
+        if self.current_step and "step_id" not in payload:
+            payload = {**payload, "step_id": self.current_step}
         part = await self.parts.append(
             session_id=self.session_id, message_id=message_id,
             type=type, payload=payload,

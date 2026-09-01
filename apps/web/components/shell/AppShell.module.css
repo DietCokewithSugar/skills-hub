@@ -1,0 +1,39 @@
+/* 7.4 布局：会话 240px | 执行流 720px 居中 | 工作区 320px 可收起 */
+.shell {
+  display: grid;
+  grid-template-columns: var(--w-sessions) 1fr auto;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.rail {
+  border-right: 1px solid var(--rule);
+  background: var(--surface);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.main {
+  overflow-y: auto;
+  min-width: 0;
+  /* 大胆只花在一处：中央的执行流。左右两栏保持克制。 */
+  background: var(--ground);
+}
+
+.workspace {
+  width: var(--w-workspace);
+  border-left: 1px solid var(--rule);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.workspaceCollapsed { width: 0; overflow: hidden; border-left: none; }
+
+/* 7.8：响应式至 768px（移动端只读 + 卡片作答） */
+@media (max-width: 1180px) {
+  .shell { grid-template-columns: var(--w-sessions) 1fr; }
+  .workspace { display: none; }
+}
+@media (max-width: 768px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail { display: none; }
+}

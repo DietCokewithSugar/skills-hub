@@ -1,0 +1,104 @@
+/* 7.4：中央是一条 1px 的垂直 spine，每个 step 是挂在 spine 上的节点。
+   这里使用序列化的时间轴是成立的，因为内容本身就是严格有序的工序。 */
+
+.wrap {
+  max-width: var(--w-spine);
+  margin: 0 auto;
+  padding: var(--s-8) var(--s-6) 30vh;
+}
+
+.spine {
+  position: relative;
+  padding-left: var(--s-6);
+}
+
+/* 1px 垂直 spine */
+.spine::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 0;
+  width: 1px;
+  background: var(--rule);
+}
+
+/* 「在想」：spine 上出现一段缓慢向下流动的靛蓝渐变
+   4s 循环，透明度 0.15 → 0.4 */
+.spineThinking::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 1px;
+  height: 120px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(31, 95, 168, 0.4),
+    transparent
+  );
+  animation: spineFlow 4s linear infinite;
+}
+
+@keyframes spineFlow {
+  0%   { transform: translateY(-120px); opacity: 0.15; }
+  50%  { opacity: 0.4; }
+  100% { transform: translateY(100%); opacity: 0.15; }
+}
+
+/* 「在等我」：执行流其余部分降到 40% 不透明度，卡片保持 100% */
+.dimmed { opacity: 0.4; transition: opacity var(--d-state) ease; }
+.focused { opacity: 1; }
+
+.node { position: relative; margin-bottom: var(--s-5); }
+
+/* 节点标记落在 spine 上 */
+.marker {
+  position: absolute;
+  left: calc(var(--s-6) * -1);
+  top: 5px;
+  display: flex;
+  width: 9px;
+  justify-content: center;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  justify-content: space-between;
+}
+
+.label { font-size: var(--t-15); }
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  flex: none;
+}
+
+/* 7.4：数字右对齐并使用等宽数字 */
+.timer {
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.sub {
+  margin-top: var(--s-1);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+}
+
+/* 已完成步骤的一行摘要（├ 前缀，见 7.4 布局草图） */
+.summary {
+  margin-top: var(--s-1);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+}
+.summary::before { content: "├ "; color: var(--rule); }
+
+/* 挂在某道工序下的内容 */
+.nodeBody { margin-top: var(--s-2); }

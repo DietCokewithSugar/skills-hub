@@ -155,9 +155,17 @@ async def _preflight_inputs(ctx: RunContext, step: Step) -> None:
         try:
             run_preflight(path, contract)
         except PreflightError as exc:
-            # 「在计算前中断并明确指出缺哪一列，不产出报告」
-            raise StepFailed(step.id, str(exc).split("\n")[0],
-                             detail=exc.to_payload(), retryable=False) from exc
+            # 「在计算前中断并明确指出缺哪一列，不产出报告」——
+            # message 必须是**具体原因**，不是「输入数据未通过前置检查」
+            # 这种只说了「失败了」的话。7.7 要求说清什么原因。
+            reason = "；".join(exc.problems) if exc.problems else str(exc)
+            raise StepFailed(
+                step.id, f"{path.name}：{reason}",
+                detail=exc.to_payload(),
+                # 同一份输入重试还是同样结果，所以不给「重试」，
+                # 但下一步怎么办要说清楚（见 hint）
+                retryable=False,
+            ) from exc
 
 
 def _read_result(ctx: RunContext, step: Step,
@@ -187,7 +195,7 @@ def _gate_schema(ctx: RunContext, step: Step, output: dict[str, Any]) -> None:
         schema = load_schema(ctx.skill.file(step.output_schema))
         validate_step_output(step.id, output, schema, schema_path=step.output_schema)
     except SchemaError as exc:
-        raise StepFailed(step.id, exc.problems[0] if exc.problems else str(exc),
+        raise StepFailed(step.id, "；".join(exc.problems) or str(exc),
                          detail=exc.to_payload(), retryable=False) from exc
 
 
@@ -198,7 +206,7 @@ def _gate_provenance(step: Step, output: dict[str, Any]) -> None:
         # 本闸门只负责「已有的指标必须能追溯」
         check_provenance(output, step_id=step.id, require_metrics=False)
     except ProvenanceError as exc:
-        raise StepFailed(step.id, exc.problems[0] if exc.problems else str(exc),
+        raise StepFailed(step.id, "；".join(exc.problems) or str(exc),
                          detail=exc.to_payload(), retryable=False) from exc
 
 

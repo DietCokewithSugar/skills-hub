@@ -20,6 +20,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import logging
+import mimetypes
 import uuid
 from pathlib import Path
 from typing import Annotated, Any
@@ -329,16 +330,26 @@ async def get_run(run_id: uuid.UUID, db: Db, user: CurrentUser) -> RunDetailOut:
     )
 
 
-@router.get("/runs/{run_id}/card", response_model=CardOut, tags=["runs"])
-async def get_pending_card(run_id: uuid.UUID, db: Db, user: CurrentUser) -> CardOut:
-    """R5 验收：关掉浏览器隔天再打开，卡片仍在原位可作答 ——
-    因为它在库里，不在某个协程的内存里。"""
+@router.get("/runs/{run_id}/card", response_model=CardOut | None,
+            status_code=status.HTTP_200_OK, tags=["runs"])
+async def get_pending_card(run_id: uuid.UUID, response: Response, db: Db,
+                           user: CurrentUser) -> CardOut | None:
+    """当前待作答的卡片。
+
+    R5 验收：关掉浏览器隔天再打开，卡片仍在原位可作答 ——
+    因为它在库里，不在某个协程的内存里。
+
+    没有待作答卡片时返回 **204**，不是 404 —— 「这个 Run 现在不需要你确认」
+    是正常状态，不是错误。用 404 会让前端每次轮询都在控制台留一条红色报错，
+    也让「Run 不存在」和「暂时没有卡片」两件事分不开。
+    """
     try:
         card = await CardRepo(db, user).pending_for_run(run_id)
     except NotFound as exc:
         raise _404(exc) from exc
     if card is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="该 Run 没有待作答的卡片")
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return None
     return CardOut(id=card.id, run_id=card.run_id, step_id=card.step_id,
                    spec=card.spec, status=card.status, response=card.response,
                    expires_at=card.expires_at)
@@ -391,6 +402,17 @@ async def resume_run(run_id: uuid.UUID, body: ResumeIn, db: Db, user: CurrentUse
         await db.commit()
         await emitter.signal(EventType.RUN_CANCELLED, {"run_id": str(run.id)})
         return _run_out(await runs.get(run.id))
+
+    # 这一步已经完成了它的使命（拿到答案），标记为成功。
+    # 不标记的话它会一直停在 waiting_for_input —— 界面上就是一个执行早已
+    # 结束、却还亮着朱批色的节点。7.2：朱批是全站最稀缺的颜色，
+    # 只出现在「必须由人处理」的地方。
+    try:
+        step_row = await StepRepo(db, user).get(run.id, card.step_id)
+        await StepRepo(db, user).finish(
+            step_row.id, status="succeeded", output=answer["values"])
+    except NotFound:
+        pass    # ask_user 发的临时卡片没有对应的 step 行
 
     await runs.set_status(run.id, "queued", current_step=card.step_id)
     await SessionRepo(db, user).set_status(run.session_id, "running")
@@ -483,7 +505,8 @@ async def retry_run(run_id: uuid.UUID, db: Db, user: CurrentUser,
 # ══════════════════════════════════════════════════════════════════
 
 @router.get("/artifacts/{artifact_id}/download", tags=["artifacts"])
-async def download_artifact(artifact_id: uuid.UUID, db: Db, user: CurrentUser,
+async def download_artifact(artifact_id: uuid.UUID, request: Request, db: Db,
+                            user: CurrentUser,
                             preview: bool = False) -> RedirectResponse:
     """R6：下载走签名 URL（有效期 1 小时），不暴露存储直链。"""
     from bench.storage.base import get_store
@@ -505,7 +528,12 @@ async def download_artifact(artifact_id: uuid.UUID, db: Db, user: CurrentUser,
         logger.exception("签名失败")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY,
                             detail=f"生成下载链接失败：{exc}") from exc
-    return RedirectResponse(url, status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(_absolute(url, request), status_code=status.HTTP_302_FOUND)
+
+
+def _absolute(url: str, request: Request) -> str:
+    """本地存储返回相对 URL，拼成绝对的再 302（跨源时相对地址会解析错）。"""
+    return url if url.startswith("http") else str(request.base_url).rstrip("/") + url
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -531,3 +559,36 @@ async def _mark_card_request_answered(db, user, session_id: uuid.UUID,
     if part is not None:
         await PartRepo(db, user).update_payload(
             part.id, {**part.payload, "status": "answered"})
+
+
+# ══════════════════════════════════════════════════════════════════
+# 本地存储取件（仅开发）
+# ══════════════════════════════════════════════════════════════════
+
+@router.get("/_local-storage/{key:path}", include_in_schema=False, tags=["artifacts"])
+async def local_storage_fetch(key: str, expires: int, token: str,
+                              download: str | None = None) -> Response:
+    """本地对象存储的签名 URL 落点。
+
+    只有在未配置 Supabase 时才会被 signed_url() 指向这里。签名与过期
+    的校验和 Supabase 侧一致 —— 拿到过期链接同样是 403。
+    """
+    from bench.storage.local import LocalObjectStore, verify
+    from bench.storage.base import get_store
+
+    store = get_store()
+    if not isinstance(store, LocalObjectStore):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="未启用本地存储")
+    if not verify(key, expires, token):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="下载链接无效或已过期")
+
+    path = store.resolve(key)
+    if not path.exists():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="产物不存在")
+
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path,
+        media_type=mimetypes.guess_type(path.name)[0] or "application/octet-stream",
+        filename=download or None,
+    )

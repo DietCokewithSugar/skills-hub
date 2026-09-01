@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     dev_user_id: str = "00000000-0000-0000-0000-000000000001"
     card_timeout_hours: int = 24
     artifact_retention_days: int = 30
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # 工作区暂存根目录（平台侧，用于沙箱上下行文件）
     workspace_root: Path = _REPO_ROOT / ".bench-workspaces"

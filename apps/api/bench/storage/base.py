@@ -27,8 +27,20 @@ class ObjectStore(Protocol):
 
 
 def get_store() -> ObjectStore:
-    from bench.storage.supabase import SupabaseStore
-    return SupabaseStore()
+    """按配置返回存储实现。
+
+    没有 Supabase 凭据时退回本地文件系统存储，让本地开发与冒烟测试能跑通。
+    两者对外契约一致（都返回带过期时间的签名 URL），所以「本地跑通了、
+    上云又是另一套行为」这种事不会发生。
+    """
+    from bench.config import get_settings
+
+    if get_settings().supabase_service_key:
+        from bench.storage.supabase import SupabaseStore
+        return SupabaseStore()
+
+    from bench.storage.local import LocalObjectStore
+    return LocalObjectStore()
 
 
 def artifact_key(user_id: str, session_id: str, run_id: str, filename: str) -> str:

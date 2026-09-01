@@ -31,3 +31,9 @@ out/
 
 # OS
 .DS_Store
+
+# 本地开发的对象存储（LocalObjectStore）
+.bench-storage/
+
+# 冒烟截图（本地产物，不入库）
+artifacts/screenshots/

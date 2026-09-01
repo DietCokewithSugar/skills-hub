@@ -1,0 +1,39 @@
+/* 7.2 用色纪律：状态不能只靠颜色传达，
+   同时用形状（灯的实心/空心/半环）与文字。 */
+.lamp {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* 空心：未开始 */
+.pending { border: 1.5px solid var(--rule); background: transparent; }
+
+/* 半环：进行中。旋转由持有运动令牌的组件负责，这里只是形状。 */
+.running {
+  border: 1.5px solid var(--live);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  background: transparent;
+}
+.spin { animation: lampSpin 1.6s linear infinite; }
+
+/* 实心：已完成 */
+.succeeded { background: var(--done); }
+
+/* 朱批：需要你处理 */
+.waiting { background: var(--signal); }
+.breathe { animation: lampBreathe 2s ease-in-out infinite; }
+
+.failed {
+  background: var(--signal);
+  border-radius: 1px;   /* 方形 —— 失败与等待都是朱批色，靠形状区分 */
+}
+
+@keyframes lampSpin { to { transform: rotate(360deg); } }
+@keyframes lampBreathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}

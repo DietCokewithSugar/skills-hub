@@ -1,0 +1,40 @@
+/* 7.5「在想」：展示的是真实的推理文本，不是假动画。
+   明确禁止：三个跳动的点、旋转 spinner、"AI 正在思考…"这类文案。 */
+
+.stream {
+  margin-top: var(--s-2);
+  font-size: var(--t-13);
+  color: var(--ink-soft);
+  line-height: 1.65;
+  max-width: var(--measure);
+}
+
+.line {
+  /* 推理文本以行为单位淡入（每行 120ms） */
+  animation: lineIn 120ms ease-out both;
+}
+@keyframes lineIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 等宽行首标记 */
+.line::before {
+  content: "·";
+  font-family: var(--font-mono);
+  color: var(--rule);
+  margin-right: var(--s-2);
+}
+
+.toggle {
+  margin-top: var(--s-1);
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--t-12);
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.collapsedNote { font-size: var(--t-12); color: var(--ink-soft); }

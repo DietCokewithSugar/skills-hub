@@ -1,0 +1,75 @@
+/* ══════════════════════════════════════════════════════════════
+   设计 token —— PRD 7.2 色彩 / 7.3 字体
+   数值按 PRD 原样落地，不要"顺手调一下"。
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 7.2 色彩 ────────────────────────────────────────────── */
+  --ground:    #EDEEEC;  /* 底：微冷灰绿，仪器面板漆 */
+  --surface:   #FBFBFA;  /* 卡面 */
+  --ink:       #16181A;  /* 主文本 */
+  --ink-soft:  #5C6266;  /* 次文本、元信息 */
+  --rule:      #D3D6D2;  /* 刻度线、分隔线、spine */
+  --live:      #1F5FA8;  /* 靛蓝：系统正在运作 */
+  --signal:    #A32B4E;  /* 朱批红：需要你处理 */
+  --done:      #2F6B4F;  /* 松绿：已完成 */
+
+  /* 上面 8 个是全部。下面是它们的透明度派生，不是新颜色。 */
+  --live-wash:   rgba(31, 95, 168, 0.08);
+  --signal-wash: rgba(163, 43, 78, 0.06);
+  --done-wash:   rgba(47, 107, 79, 0.08);
+  --ink-wash:    rgba(22, 24, 26, 0.04);
+
+  /* ── 7.3 字体 ────────────────────────────────────────────── */
+  /* Mono 只用于真实的机器数据（时间、字节、日志、代码），
+     不作为装饰性小标签使用。 */
+  --font-sans: var(--font-plex-sans), var(--font-noto-sc),
+               -apple-system, BlinkMacSystemFont, "PingFang SC",
+               "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular,
+               "SF Mono", Menlo, monospace;
+
+  /* 类型阶梯：12 / 13 / 15 / 18 / 24 / 32，正文 15px */
+  --t-12: 12px;
+  --t-13: 13px;
+  --t-15: 15px;
+  --t-18: 18px;
+  --t-24: 24px;
+  --t-32: 32px;
+  --lh-body: 1.7;
+
+  /* ── 7.4 布局 ────────────────────────────────────────────── */
+  --w-sessions:  240px;
+  --w-spine:     720px;   /* 执行流最大宽度，居中 */
+  --w-workspace: 320px;
+  /* 正文行长控制在 40 个汉字以内 */
+  --measure: 40em;
+
+  /* ── 间距（4 的倍数）───────────────────────────────────── */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+
+  /* ── 7.6 动效时长 ───────────────────────────────────────── */
+  --d-instant: 100ms;  /* 用户触发的动作给即时反馈 ≤100ms */
+  --d-state:   200ms;  /* 系统状态变化 180–260ms */
+  --d-grow:    180ms;  /* 卡片从 spine 生长 */
+  --d-collapse: 220ms; /* 作答后就地坍缩 */
+  --ease-grow: cubic-bezier(.2, .7, .3, 1);
+}
+
+/* 7.6 第 4 条：完整支持 prefers-reduced-motion ——
+   所有循环动画降级为静态状态标记，过渡缩短至 0。 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-instant: 0ms;
+    --d-state:   0ms;
+    --d-grow:    0ms;
+    --d-collapse: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

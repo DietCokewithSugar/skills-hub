@@ -62,6 +62,7 @@ async def execute_run(ctx: RunContext, *, start_index: int = 0) -> str:
                 raise RunCancelled()
 
             await ctx.runs.set_status(ctx.run_id, "running", current_step=step.id)
+            ctx.emitter.current_step = step.id
             await ctx.db.commit()
 
             try:
