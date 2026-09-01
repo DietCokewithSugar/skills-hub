@@ -1,0 +1,70 @@
+name: E2B 沙箱模板
+
+# 构建 E2B sandbox template。
+#
+# 这件事不必在任何人的本地机器上做：E2B CLI 在没有浏览器时可以直接用
+# E2B_API_KEY 认证（CLI 自己的登录提示里写明了这条），所以放在 CI 里跑
+# 最合适 —— Dockerfile 一改就能重建，而且构建是可追溯的。
+#
+# 用前先在仓库 Settings → Secrets and variables → Actions 里加一个
+# secret：E2B_API_KEY（在 E2B 控制台 API Keys 页面拿）。
+
+on:
+  workflow_dispatch:          # 手动触发：Actions 页面点 Run workflow
+    inputs:
+      template_name:
+        description: 模板名（要与后端的 BENCH_E2B_TEMPLATE 一致）
+        default: bench-python-312
+        required: true
+      no_cache:
+        description: 跳过构建缓存
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    # 只有沙箱镜像相关的东西变了才重建
+    paths:
+      - "sandbox/e2b.Dockerfile"
+      - "sandbox/runtime/**"
+      - ".github/workflows/e2b-template.yml"
+
+jobs:
+  build:
+    name: 构建并推送 template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 安装 E2B CLI
+        run: npm install -g @e2b/cli
+
+      - name: 检查凭据
+        env:
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+        run: |
+          if [ -z "$E2B_API_KEY" ]; then
+            echo "::error::未配置 E2B_API_KEY secret。"
+            echo "到 Settings → Secrets and variables → Actions 添加，"
+            echo "值在 E2B 控制台的 API Keys 页面。"
+            exit 1
+          fi
+
+      - name: 构建 template
+        env:
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY }}
+        # -p sandbox 是必须的：Dockerfile 里 `COPY runtime/bench ...` 是相对
+        # 构建上下文的，而那个目录在 sandbox/ 下。在仓库根目录构建会找不到。
+        # CLI 也会自动在该目录下找到 e2b.Dockerfile。
+        run: |
+          e2b template create "${{ inputs.template_name || 'bench-python-312' }}" \
+            -p sandbox \
+            ${{ inputs.no_cache && '--no-cache' || '' }}
+
+      - name: 下一步
+        run: |
+          echo "::notice::template 构建完成。后端把 BENCH_E2B_TEMPLATE 设为该模板名即可。"
+          echo "::notice::上线前请跑一次 tests/security/test_no_egress.py 验证沙箱确实无出网——跳过不等于通过。"

@@ -20,9 +20,26 @@
 
 ### 构建 template
 
+**推荐走 CI，不需要本地环境。** 在仓库 Settings → Secrets and variables →
+Actions 里加一个 `E2B_API_KEY`（E2B 控制台的 API Keys 页面），然后到 Actions
+页面手动触发 `E2B 沙箱模板` 这个 workflow。之后 `sandbox/` 下的东西一改，
+push 到 main 就会自动重建。
+
+E2B CLI 在没有浏览器时可以直接用 `E2B_API_KEY` 认证，所以它能在 CI 里跑 ——
+`e2b auth login` 那套浏览器授权只是本地开发的便利，不是必需的。
+
+要在本地构建的话：
+
 ```bash
-e2b template build -c sandbox/e2b.Dockerfile -n bench-python-312
+npm install -g @e2b/cli
+e2b template create bench-python-312 -p sandbox
 ```
+
+`-p sandbox` 不能省：Dockerfile 里的 `COPY runtime/bench ...` 相对构建上下文
+解析，而该目录在 `sandbox/` 下。CLI 也会自动在那里找到 `e2b.Dockerfile`。
+
+> 旧版命令 `e2b template build -c <dockerfile> -n <name>` 已废弃，而且新 CLI
+> 里 `-c` 的含义变成了「沙箱启动命令」，照抄旧命令会传错参数。
 
 镜像里钉死了依赖版本并预装了 `bench` SDK。运行时**禁止** `pip install` ——
 既是安全要求，也是复现要求。
