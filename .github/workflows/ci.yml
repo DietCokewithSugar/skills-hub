@@ -72,3 +72,59 @@ jobs:
         run: npm run typecheck
       - working-directory: apps/web
         run: npm run build
+
+  image:
+    name: 后端镜像 · 构建与容器内验证
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建后端镜像（生产口径）
+        run: docker build -f apps/api/Dockerfile -t bench-api:ci .
+
+      # 同一个 Dockerfile，只多装测试依赖 —— 保证下面验的就是生产镜像的行为
+      - name: 构建带测试依赖的同款镜像
+        run: |
+          docker build -f apps/api/Dockerfile \
+            --build-arg INSTALL_DEV=true -t bench-api:citest .
+
+      # 只装 libreoffice-core 是不够的（没有 Writer 过滤器就加载不了 .docx）。
+      # 这一步确认镜像里装对了，否则 PDF 预览会长期静默降级。
+      - name: 确认 LibreOffice Writer 与 CJK 字体在镜像里
+        run: |
+          docker run --rm bench-api:ci python -c "
+          from bench.reports.pdf import soffice_path, writer_available
+          print('soffice:', soffice_path())
+          print('writer :', writer_available())
+          assert soffice_path(), '镜像里没有 soffice'
+          assert writer_available(), '镜像里没有 Writer 过滤器（libswlo）'
+          "
+          docker run --rm bench-api:ci sh -c 'fc-list :lang=zh | head -3'
+
+      # R6 的成功路径：开发机上装不了 Writer，只有在这个镜像里才测得到。
+      - name: 容器内跑 PDF 转换测试
+        run: |
+          docker run --rm -w /app/apps/api bench-api:citest \
+            python -m pytest tests/integration/test_pdf_conversion.py -q
+
+      # entrypoint 起两个进程；确认容器真的能起来并通过健康检查。
+      - name: 冒烟：容器起得来且 /health 可用
+        run: |
+          docker run -d --name bench-smoke -p 8000:8000 \
+            -e BENCH_SANDBOX=local \
+            -e BENCH_WORKSPACE_ROOT=/tmp/ws \
+            bench-api:ci
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              echo "健康检查通过（${i}s）"
+              curl -sS http://127.0.0.1:8000/health; echo
+              curl -sS http://127.0.0.1:8000/api/skills | head -c 200; echo
+              docker rm -f bench-smoke >/dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::容器起来了但 /health 一直不通"
+          docker logs bench-smoke
+          docker rm -f bench-smoke >/dev/null
+          exit 1
